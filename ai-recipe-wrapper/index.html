@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Recipe Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-weight: 500;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            box-sizing: border-box;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .recipe-card {
+            margin-top: 30px;
+            padding: 25px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease;
+        }
+        .error-message {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            animation: fadeIn 0.5s ease;
+        }
+        .recipe-details {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+        .recipe-details p {
+            margin: 5px 0;
+            flex: 1;
+            min-width: 200px;
+        }
+        ul, ol {
+            padding-left: 25px;
+        }
+        li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4CAF50;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        .examples {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 8px;
+        }
+        .examples h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .example-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .example-tag {
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .example-tag:hover {
+            background-color: #45a049;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Recipe Generator</h1>
+        <form id="recipeForm">
+            <div class="form-group">
+                <label for="ingredients">Enter ingredients (comma-separated):</label>
+                <input type="text" id="ingredients" name="ingredients" 
+                       placeholder="e.g., chicken, rice, tomatoes, onions" required>
+            </div>
+            <button type="submit" id="submitBtn">Generate Recipe</button>
+        </form>
+
+        <div class="examples">
+            <h3>Try these combinations:</h3>
+            <div class="example-tags">
+                <span class="example-tag" onclick="useExample('chicken, rice, tomatoes, onions')">Chicken & Rice</span>
+                <span class="example-tag" onclick="useExample('pasta, garlic, olive oil, parmesan')">Pasta Primavera</span>
+                <span class="example-tag" onclick="useExample('beef, potatoes, carrots, onions')">Beef Stew</span>
+                <span class="example-tag" onclick="useExample('salmon, lemon, dill, butter')">Lemon Salmon</span>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Generating your recipe...</p>
+        </div>
+    </div>
+
+    <script>
+        // Sample recipe data for demonstration
+        const sampleRecipes = {
+            'chicken, rice, tomatoes, onions': {
+                naam: 'Creamy Chicken and Rice',
+                bereidingstijd: '45 minutes',
+                moeilijkheidsgraad: 'medium',
+                ingrediënten: ['chicken', 'rice', 'tomatoes', 'onions', 'butter'],
+                stappen: [
+                    'In a large skillet, melt butter over medium heat.',
+                    'Add chicken pieces and cook until browned on all sides.',
+                    'Add rice and stir to coat with the butter.',
+                    'Pour in water or chicken broth, cover, and let simmer for 20-25 minutes until rice is cooked and chicken is tender.',
+                    'Stir in a bit more butter for extra creaminess before serving.'
+                ]
+            },
+            'pasta, garlic, olive oil, parmesan': {
+                naam: 'Simple Garlic Parmesan Pasta',
+                bereidingstijd: '20 minutes',
+                moeilijkheidsgraad: 'easy',
+                ingrediënten: ['pasta', 'garlic', 'olive oil', 'parmesan', 'salt', 'pepper'],
+                stappen: [
+                    'Cook pasta according to package instructions.',
+                    'In a pan, heat olive oil and sauté minced garlic until fragrant.',
+                    'Drain pasta and add to the pan with garlic.',
+                    'Toss with grated parmesan cheese.',
+                    'Season with salt and pepper to taste.'
+                ]
+            },
+            'beef, potatoes, carrots, onions': {
+                naam: 'Classic Beef Stew',
+                bereidingstijd: '2 hours',
+                moeilijkheidsgraad: 'medium',
+                ingrediënten: ['beef', 'potatoes', 'carrots', 'onions', 'beef broth', 'flour'],
+                stappen: [
+                    'Brown beef cubes in a large pot.',
+                    'Add chopped vegetables and sauté briefly.',
+                    'Add beef broth and bring to a simmer.',
+                    'Cook on low heat for 1.5-2 hours until meat is tender.',
+                    'Thicken with flour if desired.'
+                ]
+            },
+            'salmon, lemon, dill, butter': {
+                naam: 'Lemon Dill Salmon',
+                bereidingstijd: '25 minutes',
+                moeilijkheidsgraad: 'easy',
+                ingrediënten: ['salmon', 'lemon', 'dill', 'butter', 'salt', 'pepper'],
+                stappen: [
+                    'Preheat oven to 375°F (190°C).',
+                    'Place salmon on a baking sheet.',
+                    'Top with butter, lemon slices, and fresh dill.',
+                    'Season with salt and pepper.',
+                    'Bake for 20-25 minutes until cooked through.'
+                ]
+            }
+        };
+
+        function useExample(ingredients) {
+            document.getElementById('ingredients').value = ingredients;
+        }
+
+        function displayRecipe(recipe) {
+            const container = document.querySelector('.container');
+            
+            // Remove any existing recipe or error
+            const existingRecipe = document.querySelector('.recipe-card');
+            const existingError = document.querySelector('.error-message');
+            if (existingRecipe) existingRecipe.remove();
+            if (existingError) existingError.remove();
+
+            const recipeCard = document.createElement('div');
+            recipeCard.className = 'recipe-card';
+            recipeCard.innerHTML = `
+                <h2>${recipe.naam}</h2>
+                <div class="recipe-details">
+                    <p><strong>Bereidingstijd:</strong> ${recipe.bereidingstijd}</p>
+                    <p><strong>Moeilijkheidsgraad:</strong> ${recipe.moeilijkheidsgraad}</p>
+                </div>
+                <h3>Ingrediënten:</h3>
+                <ul>
+                    ${recipe.ingrediënten.map(ing => `<li>${ing}</li>`).join('')}
+                </ul>
+                <h3>Bereidingswijze:</h3>
+                <ol>
+                    ${recipe.stappen.map(stap => `<li>${stap}</li>`).join('')}
+                </ol>
+            `;
+            
+            container.appendChild(recipeCard);
+        }
+
+        document.getElementById('recipeForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const loading = document.getElementById('loading');
+            const ingredients = document.getElementById('ingredients').value.toLowerCase();
+            
+            // Disable button and show loading
+            submitBtn.disabled = true;
+            loading.style.display = 'block';
+            
+            // Simulate API call with setTimeout
+            setTimeout(() => {
+                // Check if we have a sample recipe for these ingredients
+                const recipe = sampleRecipes[ingredients];
+                
+                if (recipe) {
+                    displayRecipe(recipe);
+                } else {
+                    // Create a simple recipe based on the ingredients
+                    const ingredientList = ingredients.split(',').map(i => i.trim());
+                    const simpleRecipe = {
+                        naam: 'Simple ' + ingredientList[0].charAt(0).toUpperCase() + ingredientList[0].slice(1) + ' Dish',
+                        bereidingstijd: '30 minutes',
+                        moeilijkheidsgraad: 'easy',
+                        ingrediënten: ingredientList,
+                        stappen: [
+                            'Prepare all ingredients by washing and chopping as needed.',
+                            'Heat a pan over medium heat.',
+                            'Add ingredients in order of cooking time (longest first).',
+                            'Season with salt and pepper to taste.',
+                            'Cook until all ingredients are tender and well combined.'
+                        ]
+                    };
+                    displayRecipe(simpleRecipe);
+                }
+                
+                // Re-enable button and hide loading
+                submitBtn.disabled = false;
+                loading.style.display = 'none';
+            }, 1500); // Simulate 1.5 second delay
+        });
+    </script>
+</body>
+</html> 
